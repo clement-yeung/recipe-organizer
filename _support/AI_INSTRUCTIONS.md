@@ -12,10 +12,13 @@
 ## 1. 資料夾結構與自動目錄
 
 ```text
-recipes/
+.
 ├── README.md
+├── AGENTS.md
+├── LICENSE
 ├── dishes/
 ├── build_cookbook.py
+├── docs/
 ├── export/
 └── _support/
     ├── AI_INSTRUCTIONS.md
@@ -26,7 +29,10 @@ recipes/
 
 - `dishes/`：一道菜一個 Markdown 檔。
 - `README.md`：固定的使用說明，不列出個別食譜。
+- `AGENTS.md`：AI 工具的入口，指向本指引。
+- `LICENSE`：MIT 授權。
 - `build_cookbook.py`：自動掃描、合併及匯出整本食譜。
+- `docs/`：README 使用的 PDF 預覽截圖。
 - `export/`：自動產生的 Markdown、HTML 及 PDF。
 - `_support/`：AI 指引、範本、套件需求及 Python 環境。
 
@@ -75,7 +81,7 @@ recipes/
 
 - 不喜歡大蒜，食譜預設不使用大蒜，
   包括蒜末、蒜泥、蒜粉等形式。
-- 不喜歡青蔥、紅蔥頭，食譜預設不使用
+- 不喜歡青蔥、紅蔥頭，食譜預設不使用青蔥、紅蔥頭。
 - 不喜歡吃洋蔥本體，但可以接受用洋蔥烹調提味，
   烹調後會將洋蔥取出丟棄，不食用。
 - 使用洋蔥時，保留為容易取出的大塊，
@@ -309,7 +315,7 @@ recipes/
 
 ## 11. 匯出流程
 
-使用者在 `recipes/` 執行：
+使用者在 repo 根目錄執行：
 
 ```bash
 python3 build_cookbook.py
@@ -346,7 +352,6 @@ README 不應包含需要逐次更新的個別食譜清單。
 ## 12. 技術與交付原則
 
 - 不要求修改 VS Code 或共用工作區設定。
-- 不引入 LaTeX 編譯器需求。
 - 不擅改無關食譜。
 - 工具修改後仍維持既定資料夾結構。
 - 檢查份量、單位、材料、時間、步驟與設定一致。

@@ -1,225 +1,249 @@
 # My Cookbook
 
-One dish per Markdown file, stored in `dishes/`.
+A personal Traditional-Chinese cookbook. One dish per Markdown file in `dishes/`;
+one Python script turns them into a single PDF with a clickable table of contents.
 
-This README does not maintain a list of individual recipes.
-Adding, deleting, or renaming a recipe does not require updating this file.
+This file keeps no recipe list — the PDF's table of contents is generated from
+the filenames in `dishes/` on every build.
 
-## Daily use
+![Cover page and table of contents of the generated PDF](docs/preview.png)
 
-- Add or edit recipes directly in `dishes/`.
-- New recipes can start from `_support/TEMPLATE.md`.
-- Keep a single file for recipes that use several appliances, and list the required appliances in its content.
-- Press `Cmd + Shift + V` in VS Code to view the Markdown preview.
-- You do not need to merge recipes or maintain a table of contents by hand.
+## Quick start
 
-## Exporting the whole PDF
-
-Open the `recipes` folder in VS Code,
-open a Terminal, and run:
+From the repo root:
 
 ```bash
 python3 build_cookbook.py
 ```
 
-The script scans the Markdown recipes in `dishes/`
-and rebuilds the whole cookbook together with its table of contents.
+Then open `export/cookbook.pdf`.
 
-The computer needs a working Python 3.
-The first run needs network access; the script prepares
-`_support/.venv/`, Playwright, and Chromium automatically.
+You need a working Python 3. The first build is slow: the script creates
+`_support/.venv/`, installs Playwright, and downloads Chromium. That needs
+network access once. Later builds reuse all of it.
 
-No VS Code settings need to change, and LaTeX is not used.
+## Everyday use
 
-This runs on demand, not immediately when a recipe is saved.
-Re-run the command whenever you want a new PDF.
+Add a dish:
+
+1. Copy `_support/TEMPLATE.md` into `dishes/`.
+2. Name it with the next free number, for example `004-菜名.md`.
+3. Fill in the template. The title inside the file has no number.
+4. Rebuild and it appears in the PDF.
+
+Edit a dish:
+
+1. Open that file in `dishes/`.
+2. Change it in place — no dates, no history, no second copy.
+3. Rebuild.
+
+To see the Markdown while writing, use the VS Code preview:
+`Cmd + Shift + V` on macOS, `Ctrl + Shift + V` on Windows and Linux.
+
+## Filenames and order
+
+Recipes are sorted by relative filename, so the numeric prefix is the PDF order.
+
+- Three digits: `001-香菇玉米蒸肉餅.md`.
+- A new recipe takes the next free number, so it lands at the end.
+- After deleting a dish, never renumber the others or reuse the number.
+- The title inside the file carries no number: `# 香菇玉米蒸肉餅`.
+
+## Recipe content
+
+- Traditional Chinese only.
+- One dish per file, no subfolders. A dish that uses several appliances still
+  gets one file; list the appliances inside it.
+- Every recipe starts with `器具`, `份量`, a time field, and `狀態`.
+- House preferences: no garlic, no scallion or shallot; onion only as large
+  pieces that are taken out and discarded after cooking.
+
+`_support/AI_INSTRUCTIONS.md` is the full spec: template, timing rules,
+appliance labels, and the supported Markdown subset. Visitors adapting this
+for themselves should change those preferences there, not in the script.
+
+## Editing with AI
+
+Agents that read repo instructions (OpenCode, Claude Code, Cursor, and similar)
+load `AGENTS.md` automatically, and it points to `_support/AI_INSTRUCTIONS.md`
+for the full rules. When editing an existing recipe, name the file so the agent
+reads it; the guide does not need to be pasted in full.
 
 ## Output files
 
-- [Full cookbook PDF](export/cookbook.pdf)
-- [Merged Markdown](export/cookbook.md)
-- [HTML layout preview](export/cookbook.html)
+Each build writes three files under `export/`:
 
-These files appear only after the first run.
+| File | Use |
+| --- | --- |
+| `export/cookbook.pdf` | the cookbook: cover TOC, one recipe per page |
+| `export/cookbook.html` | same layout, quick to open in a browser |
+| `export/cookbook.md` | all recipes merged into plain Markdown |
 
-Each run overwrites the output but leaves the original recipes untouched.
-Do not edit the files in `export/` directly.
+These are generated, so they are gitignored and not in the repo. The screenshot
+above comes from a real build. Do not edit them by hand — rebuild instead.
 
-## Recipe order
+## If something goes wrong
 
-Recipes are sorted by their relative filenames in `dishes/`.
+- New PDF missing your changes: the build does not watch files. Run
+  `python3 build_cookbook.py` again.
+- Build fails: run `python3 build_cookbook.py --merge-only`. It rebuilds the
+  Markdown and HTML without touching the venv or Playwright, which tells you
+  whether the problem is a recipe or the browser.
+- Playwright or Chromium error: check the network and run it again; the setup
+  step is retried.
 
-To control the order, add a prefix to the filename:
+## Technical details
 
-```text
-01-香菇玉米蒸肉餅.md
-02-番茄炒蛋.md
-03-烤雞腿.md
-```
-
-Numbering is optional.
-Additions, deletions, and renames show up in the next export automatically.
-
-## PDF styling
-
-- One PDF contains every recipe.
-- The cover page has a blue, clickable table of contents.
-- Each recipe starts on a new page.
-- Headings, subheadings, body text, and page numbers are black.
-- Table-of-contents links and web links stay blue.
-- Every page keeps a thin blue frame outside the text area.
-- Recipe titles have no horizontal rule underneath.
-- Appliances use text with the original bullet symbols.
-- Long recipes continue onto the next page naturally; the font is never shrunk to force a fit.
-
-## File structure
+- `--merge-only` — Markdown and HTML only, never touches `_support/.venv/`.
+- `--render` — internal second pass used by the build; do not call it directly.
+- Layout, CSS, page frame, TOC, and pagination live only in `build_cookbook.py`.
+  Keep recipes as plain Markdown.
+- Supported in recipes: headings, paragraphs, single-level lists, `**bold**`,
+  `` `inline code` ``, `[links](https://…)`. Tables, images, nested lists, code
+  blocks, raw HTML, and manual page breaks are not — the renderer flattens or
+  drops them.
 
 ```text
-recipes/
+.
 ├── README.md
-├── dishes/
-├── build_cookbook.py
-├── export/
-│   ├── cookbook.md
-│   ├── cookbook.html
-│   └── cookbook.pdf
+├── AGENTS.md
+├── LICENSE
+├── dishes/              recipes, one file per dish
+├── build_cookbook.py    renderer and PDF export
+├── docs/preview.png     screenshot used by this README
+├── export/              generated, gitignored
 └── _support/
     ├── AI_INSTRUCTIONS.md
     ├── TEMPLATE.md
     ├── requirements.txt
-    └── .venv/
+    └── .venv/           generated, gitignored
 ```
 
-`export/` and `_support/.venv/` are generated by the script.
+## License
 
-## Getting AI help with edits
-
-Give the AI the full contents of `_support/AI_INSTRUCTIONS.md`.
-
-The guide already covers the complete template, preferences, and tool limits,
-so you do not need to paste `TEMPLATE.md` separately.
-
-When editing an existing recipe, the AI still needs to read that file,
-so paste the recipe content as well.
-
-## Markdown format
-
-Supported: headings, plain paragraphs, single-level lists, bold,
-inline code, and HTTP(S) links.
-
-Do not put tables, images, nested lists,
-code blocks, or raw HTML layout in recipes.
+MIT — see `LICENSE`.
 
 ---
 
 # 我的食譜
 
-一道菜一個 Markdown 檔案，存放在 `dishes/`。
+一本個人的繁體中文食譜。一道菜一個 Markdown 檔案，放在 `dishes/`；
+一支 Python 腳本把它們排成一本有可點選目錄的 PDF。
 
-本 README 不維護個別食譜清單。
-新增、刪除或改名食譜時，不需要更新本文件。
+這份 README 不維護食譜清單——PDF 的目錄每次建置時，
+由 `dishes/` 裡的檔名產生。
 
-## 日常使用
+![產生的 PDF 封面與目錄](docs/preview.png)
 
-- 直接在 `dishes/` 新增或修改食譜。
-- 新食譜可複製 `_support/TEMPLATE.md`。
-- 多器具食譜只保留一份檔案，在內容中列出需要的器具。
-- 在 VS Code 按 `Cmd + Shift + V` 查看 Markdown 預覽。
-- 不需要手動合併食譜或維護目錄。
+## 快速開始
 
-## 匯出整本 PDF
-
-在 VS Code 開啟 `recipes` 資料夾，
-開啟 Terminal，執行：
+在 repo 根目錄執行：
 
 ```bash
 python3 build_cookbook.py
 ```
 
-腳本會自動掃描 `dishes/` 裡的 Markdown 食譜，
-重新建立整本食譜及其目錄。
+然後打開 `export/cookbook.pdf`。
 
-電腦需要已有可用的 Python 3。
-首次執行需要網路，腳本會自動準備
-`_support/.venv/`、Playwright 與 Chromium。
+電腦需要可用的 Python 3。第一次建置比較久：
+腳本會建立 `_support/.venv/`、安裝 Playwright、下載 Chromium，
+需要一次網路連線。之後會沿用，不會重新下載。
 
-不需要修改 VS Code 設定，也不使用 LaTeX。
+## 日常使用
 
-這是執行時更新，不是儲存食譜後立即更新。
-每次想產生新版 PDF 時，重新執行指令即可。
+新增一道菜：
+
+1. 複製 `_support/TEMPLATE.md` 到 `dishes/`。
+2. 檔名用下一個空號，例如 `004-菜名.md`。
+3. 照範本填寫，檔內標題不加編號。
+4. 重新建置，PDF 就會出現。
+
+修改一道菜：
+
+1. 直接打開 `dishes/` 裡那個檔案。
+2. 就地修改，不寫日期、不留版本、不另存新檔。
+3. 重新建置。
+
+寫的時候想先看樣子，用 VS Code 的 Markdown 預覽：
+macOS 按 `Cmd + Shift + V`，Windows 與 Linux 按 `Ctrl + Shift + V`。
+
+## 檔名與順序
+
+PDF 依相對檔名排序，所以檔名前面的編號就是 PDF 裡的順序。
+
+- 三位數：`001-香菇玉米蒸肉餅.md`。
+- 新食譜用下一個空號，自然排在最後。
+- 刪除食譜後不重新編號，也不補回空號。
+- 檔內標題不含編號：`# 香菇玉米蒸肉餅`。
+
+## 食譜內容
+
+- 一律使用繁體中文。
+- 一道菜一個檔案，不開子資料夾。多器具的菜仍是一個檔案，
+  器具列在內容裡。
+- 每份食譜開頭要有 `器具`、`份量`、時間欄位與 `狀態`。
+- 家裡口味：不加蒜、不加蔥與紅蔥頭；洋蔥只放可整塊撈起丟棄的大塊。
+
+完整規格在 `_support/AI_INSTRUCTIONS.md`：範本、時間規則、器具標籤
+與支援的 Markdown 範圍。若想改成自己的做法，
+請改那份文件裡的偏好，不要改腳本。
+
+## 用 AI 編輯
+
+會讀取 repo 指示的 AI 工具（OpenCode、Claude Code、Cursor 等）
+會自動載入 `AGENTS.md`，再由它指向 `_support/AI_INSTRUCTIONS.md`
+取得完整規則。修改既有食譜時，把檔名告訴 AI，讓它讀那一個檔案即可，
+不需要整份貼上。
 
 ## 輸出檔案
 
-- [整本食譜 PDF](export/cookbook.pdf)
-- [合併後的 Markdown](export/cookbook.md)
-- [HTML 排版預覽](export/cookbook.html)
+每次建置會在 `export/` 產生三個檔案：
 
-第一次執行後才會出現這些檔案。
+| 檔案 | 用途 |
+| --- | --- |
+| `export/cookbook.pdf` | 整本食譜：封面目錄、每道菜一頁 |
+| `export/cookbook.html` | 相同排版，用瀏覽器快速看 |
+| `export/cookbook.md` | 全部食譜合併的純 Markdown |
 
-每次執行會覆寫產出，但不修改原始食譜。
-不要直接編輯 `export/` 裡的檔案。
+這些是產出，所以被 gitignore、不在 repo 裡；上面那張圖就是實際建置的結果。
+不要手動編輯，重新建置即可。
 
-## 食譜順序
+## 遇到問題
 
-依 `dishes/` 中的相對檔名排序。
+- PDF 沒有更新：建置不會監看檔案，改完要再執行
+  `python3 build_cookbook.py`。
+- 建置失敗：改跑 `python3 build_cookbook.py --merge-only`。
+  它只重建 Markdown 與 HTML，不碰 venv 與 Playwright，
+  可以用來分辨是食譜問題還是瀏覽器問題。
+- Playwright 或 Chromium 出錯：確認有網路後再執行一次，
+  安裝步驟會重試。
 
-若想指定順序，可在檔名前加上：
+## 技術細節
 
-```text
-01-香菇玉米蒸肉餅.md
-02-番茄炒蛋.md
-03-烤雞腿.md
-```
-
-不使用編號也可以。
-新增、刪除或改名後，下一次匯出會自動反映。
-
-## PDF 樣式
-
-- 一本 PDF 包含全部食譜。
-- 封面提供藍色、可點選的食譜目錄。
-- 每道食譜從新的一頁開始。
-- 標題、小標題、正文與頁碼使用黑色。
-- 目錄連結及網站連結保留藍色。
-- 每頁保留細藍框，放在正文區域外側。
-- 食譜標題沒有水平底線。
-- 器具使用文字與原有圓點符號。
-- 長食譜自然續頁，不強制縮小字體。
-
-## 檔案結構
+- `--merge-only`：只產生 Markdown 與 HTML，完全不碰 `_support/.venv/`。
+- `--render`：建置流程內部使用的第二階段，不要直接呼叫。
+- 版面、CSS、頁框、目錄與分頁只存在於 `build_cookbook.py`。
+  食譜保持純 Markdown。
+- 食譜支援：標題、段落、單層清單、`**粗體**`、`` `行內程式碼` ``、
+  `[連結](https://…)`。表格、圖片、巢狀清單、程式碼區塊、原始 HTML
+  與手動分頁不支援，渲染器會忽略或壓平。
 
 ```text
-recipes/
+.
 ├── README.md
-├── dishes/
-├── build_cookbook.py
-├── export/
-│   ├── cookbook.md
-│   ├── cookbook.html
-│   └── cookbook.pdf
+├── AGENTS.md
+├── LICENSE
+├── dishes/              食譜，一道菜一個檔案
+├── build_cookbook.py    排版與 PDF 匯出
+├── docs/preview.png     給這份 README 用的截圖
+├── export/              產出，已 gitignore
 └── _support/
     ├── AI_INSTRUCTIONS.md
     ├── TEMPLATE.md
     ├── requirements.txt
-    └── .venv/
+    └── .venv/           產出，已 gitignore
 ```
 
-`export/` 和 `_support/.venv/` 由腳本自動產生。
+## 授權
 
-## 讓 AI 協助修改
-
-將 `_support/AI_INSTRUCTIONS.md` 的全部內容提供給 AI。
-
-指引已包含完整範本、偏好與工具限制，
-不必另外貼上 `TEMPLATE.md`。
-
-修改既有食譜時，仍須讓 AI 讀取該檔案，
-或一起貼上食譜內容。
-
-## Markdown 格式
-
-支援標題、一般段落、單層清單、粗體、
-行內程式碼及 HTTP(S) 連結。
-
-食譜內不要加入表格、圖片、巢狀清單、
-程式碼區塊或原始 HTML 排版。
+MIT，見 `LICENSE`。

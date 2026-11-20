@@ -200,13 +200,15 @@ def render_markdown(markdown):
     - Paragraphs
     - Single-level ordered/unordered lists
     - Bold, inline code, and HTTP(S) links
+    - Separate paragraphs for consecutive recipe header fields
 
     Does not support full Markdown, tables, images, nested lists,
-    or fenced code blocks.
+    or fenced code blocks. This is a renderer, not a recipe validator.
     """
     output = []
     paragraph = []
     active_list = None
+    in_header = True
 
     def flush_paragraph():
         if paragraph:
@@ -230,16 +232,27 @@ def render_markdown(markdown):
 
         heading = re.match(r"^(#{1,6})\s+(.+)$", line)
         item = re.match(r"^([-*]|\d+\.)\s+(.+)$", line)
+        header_field = re.match(
+            r"^(器具|份量|準備時間|烹調時間|額外等待|狀態)[：:]", line
+        )
 
         if heading:
             flush_paragraph()
             close_list()
 
             level = len(heading.group(1))
+            if level != 1:
+                in_header = False
             text = render_inline(heading.group(2))
             output.append(f"<h{level}>{text}</h{level}>")
 
+        elif in_header and header_field:
+            flush_paragraph()
+            close_list()
+            output.append(f"<p>{render_inline(line)}</p>")
+
         elif item:
+            in_header = False
             flush_paragraph()
 
             kind = (
@@ -257,6 +270,7 @@ def render_markdown(markdown):
             output.append(f"<li>{text}</li>")
 
         else:
+            in_header = False
             close_list()
             paragraph.append(line)
 
